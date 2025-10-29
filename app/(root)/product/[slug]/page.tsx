@@ -6,8 +6,10 @@ import { Card, CardContent } from "@/components/ui/card";
 import { getProductBySlug } from "@/lib/actions/product.actions";
 import { notFound } from "next/navigation";
 
-const ProductDetailsPage = async (props: { params: { slug: string } }) => {
-  const { slug } = props.params;
+const ProductDetailsPage = async (props: {
+  params: Promise<{ slug: string }>;
+}) => {
+  const { slug } = await props.params;
   const product = await getProductBySlug(slug);
   if (!product) notFound();
 
