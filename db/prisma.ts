@@ -1,41 +1,31 @@
-import { PrismaClient } from "../lib/generated/prisma/client";
+import { neonConfig } from "@neondatabase/serverless";
 import { PrismaNeon } from "@prisma/adapter-neon";
-import { ProductModel } from "../lib/generated/prisma/models/Product";
+import { PrismaClient } from "../lib/generated/prisma/client";
+import ws from "ws";
 
-// PrismaNeon expects a pool config with connectionString
-const adapter = new PrismaNeon({
-  connectionString: process.env.DATABASE_URL!, // ✅ Pass string directly
-});
+// Sets up WebSocket connections, which enables Neon to use WebSocket communication.
+neonConfig.webSocketConstructor = ws;
 
-// Create extended Prisma client
-function createPrismaClient() {
-  return new PrismaClient({ adapter }).$extends({
-    result: {
-      product: {
-        price: {
-          compute(product: ProductModel) {
-            return product.price.toString();
-          },
+// Configuration for the connection pool.
+const poolConfig = { connectionString: process.env.DATABASE_URL };
+
+// Instantiates the Prisma adapter with the Neon pool configuration.
+const adapter = new PrismaNeon(poolConfig);
+
+// Extends the PrismaClient with a custom result transformer to convert the price and rating fields to strings.
+export const prisma = new PrismaClient({ adapter }).$extends({
+  result: {
+    product: {
+      price: {
+        compute(product) {
+          return product.price.toString();
         },
-        rating: {
-          compute(product: ProductModel) {
-            return product.rating.toString();
-          },
+      },
+      rating: {
+        compute(product) {
+          return product.rating.toString();
         },
       },
     },
-  });
-}
-
-// Singleton pattern
-declare global {
-  var prisma: ReturnType<typeof createPrismaClient> | undefined;
-}
-
-export const prisma =
-  global.prisma ||
-  (() => {
-    const client = createPrismaClient();
-    if (process.env.NODE_ENV !== "production") global.prisma = client;
-    return client;
-  })();
+  },
+});
