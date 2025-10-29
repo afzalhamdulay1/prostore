@@ -4,29 +4,45 @@ import { ProductModel } from "../lib/generated/prisma/models/Product";
 import { PrismaClient } from "../lib/generated/prisma/client";
 import ws from "ws";
 
-// Sets up WebSocket connections, which enables Neon to use WebSocket communication.
+// Set up WebSocket for Neon
 neonConfig.webSocketConstructor = ws;
 
-// Configuration for the connection pool.
+// Neon connection pool config
 const poolConfig = { connectionString: process.env.DATABASE_URL };
-
-// Instantiates the Prisma adapter with the Neon pool configuration.
 const adapter = new PrismaNeon(poolConfig);
 
-// Extends the PrismaClient with a custom result transformer to convert the price and rating fields to strings.
-export const prisma = new PrismaClient({ adapter }).$extends({
-  result: {
-    product: {
-      price: {
-        compute(product: ProductModel) {
-          return product.price.toString();
+// TypeScript: allow global to hold extended client
+type ExtendedPrismaClient = ReturnType<typeof createPrismaClient>;
+
+function createPrismaClient() {
+  return new PrismaClient({ adapter }).$extends({
+    result: {
+      product: {
+        price: {
+          compute(product: ProductModel) {
+            return product.price.toString();
+          },
         },
-      },
-      rating: {
-        compute(product: ProductModel) {
-          return product.rating.toString();
+        rating: {
+          compute(product: ProductModel) {
+            return product.rating.toString();
+          },
         },
       },
     },
-  },
-});
+  });
+}
+
+// Extend globalThis to hold the Prisma client
+declare global {
+  var prisma: ExtendedPrismaClient | undefined;
+}
+
+// Reuse client in development
+export const prisma =
+  global.prisma ||
+  (() => {
+    const client = createPrismaClient();
+    if (process.env.NODE_ENV !== "production") global.prisma = client;
+    return client;
+  })();
