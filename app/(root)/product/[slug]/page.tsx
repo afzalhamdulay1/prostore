@@ -6,8 +6,12 @@ import { Card, CardContent } from "@/components/ui/card";
 import { getProductBySlug } from "@/lib/actions/product.actions";
 import { notFound } from "next/navigation";
 
-const ProductDetailsPage = async (props: { params: { slug: string } }) => {
-  const { slug } = props.params;
+interface ProductPageProps {
+  params: Promise<{ slug: string }>; // Next.js 15 expects a Promise here
+}
+
+const ProductDetailsPage = async ({ params }: ProductPageProps) => {
+  const { slug } = await params;
   const product = await getProductBySlug(slug);
   if (!product) notFound();
 
