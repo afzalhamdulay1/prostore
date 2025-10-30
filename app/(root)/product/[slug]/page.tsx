@@ -1,5 +1,5 @@
 import { getProductBySlug } from "@/lib/actions/product.actions";
-import ProductDetailsContent from "./ProductDetailsContent";
+// import ProductDetailsContent from "./ProductDetailsContent";
 import { notFound } from "next/navigation";
 
 const ProductDetailsPage = async ({
@@ -13,7 +13,8 @@ const ProductDetailsPage = async ({
 
   return (
     <>
-      <ProductDetailsContent product={product} />
+      {/* <ProductDetailsContent product={product} /> */}
+      hello {slug}
     </>
   );
 };
