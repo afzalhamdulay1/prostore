@@ -16,19 +16,31 @@ const poolConfig = { connectionString: process.env.DATABASE_URL };
 const adapter = new PrismaNeon(poolConfig);
 
 // Extends the PrismaClient with a custom result transformer to convert the price and rating fields to strings.
-export const prisma = new PrismaClient({ adapter }).$extends({
-  result: {
-    product: {
-      price: {
-        compute(product) {
-          return product.price.toString();
+const prismaClientSingleton = () => {
+  return new PrismaClient({ adapter }).$extends({
+    result: {
+      product: {
+        price: {
+          compute(product: any) {
+            return product.price.toString();
+          },
         },
-      },
-      rating: {
-        compute(product) {
-          return product.rating.toString();
+        rating: {
+          compute(product: any) {
+            return product.rating.toString();
+          },
         },
       },
     },
-  },
-});
+  });
+};
+
+declare global {
+  var prismaGlobal: undefined | ReturnType<typeof prismaClientSingleton>;
+}
+
+export const prisma = globalThis.prismaGlobal ?? prismaClientSingleton();
+
+if (process.env.NODE_ENV !== "production") {
+  globalThis.prismaGlobal = prisma;
+}
